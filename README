@@ -1,0 +1,51 @@
+flckcli is a command line batch uploader for flickr.
+
+= SUMMARY =
+This program uploads batches of numbered images to flickr from the command
+line.  It takes a start and stop number, a configurable filename format and
+directory, allows for some numbers to be missing, like if those numbers were
+used for movies as my canon does.  The program outputs information about the
+files it has uploaded in yaml to stdout and to a log file.
+
+specify the start and stop number and it will do the rest.
+
+= INSTALL =
+  1. copy flckcli.rb into your PATH, probably in /usr/local/bin/
+  2. edit ~/.flck.yml and add your api key info in "secret" and "key", and then 
+    specify the directory and filename format. mine looks like this...
+--- 
+:img_dir: ~/img/camera/2009/100canon/
+:browser: /usr/bin/firefox
+:logyml: ~/.flck-log.yml
+:format: img_%04d.jpg
+:token: <added by the code >
+secret: <get api key+secret from flickr>
+key: <get api key+secret from flickr>
+
+  3. 
+
+
+= USAGE =
+$ ./flck.rb 
+usage: $0 <start number> <stop number>
+$ 
+
+eg:
+
+$ ./flck.rb 6101 6200 
+---
+#skipping img_6101.jpg which does not exist.
+#skipping img_6102.jpg which does not exist.
+#skipping img_6103.jpg which does not exist.
+#skipping img_6104.jpg which does not exist.
+#skipping img_6105.jpg which does not exist.
+img_6106.jpg: { id: 5156738082, elapsed: "55.220055", size: 3525509}
+img_6107.jpg: { id: 5156130241, elapsed: "54.85109", size: 3618019}
+img_6108.jpg: { id: 5156133179, elapsed: "51.005421", size: 3602739}
+...
+and so on
+
+= TODO =
+  1. separate token, which is added by code, from the config yml 
+  2. allow yml or command line to specify the options to the upload
+  3. support other operations
