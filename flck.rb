@@ -5,7 +5,7 @@
 ## File:      flck.rb
 ## Author:    mgrosso 
 ## Created:   Sun Nov  7 01:52:40 PDT 2010 on caliban
-## Copyright:   Copyright  
+## Copyright:   
 ## Project:   
 ## Purpose:   
 ## 
@@ -34,26 +34,71 @@ def doinit
     @logfile = File.open(File.expand_path(@cfg_data[:logyml]), "a" )
     FlickRaw.api_key = @cfg_data["key"]
     FlickRaw.shared_secret = @cfg_data["secret"]
-    if @cfg_data.include?(:token)
-        @auth = flickr.auth.checkToken :auth_token => @cfg_data[:token]
-    else
-        frob = flickr.auth.getFrob
-        auth_url = FlickRaw.auth_url :frob => frob, :perms => 'write'
-        ignore=%x[#{@cfg_data[:browser]} \"#{auth_url}\"]
-        output "# launched #{@cfg_data[:browser]} to view \"#{auth_url}\""
-        output "# hit return after you have logged into the url and approved the app"
-        STDIN.getc
-        @auth = flickr.auth.getToken :frob => frob
-        @cfg_data[:token] = @auth.token
-        File.open(File.expand_path(CFG_FILE), 'w') { |f| YAML.dump(@cfg_data, f) }
+    flickr.access_token = @cfg_data["oauth_token"]
+    flickr.access_secret = @cfg_data["oauth_token_secret"]
+
+    #@access_token = flickr.get_access_token( @cfg_data['oauth_token'], @cfg_data['oauth_token_secret'], verify)
+    #output "access_token: #{@access_token}"
+    @login = flickr.test.login
+    output "login: #{@login}"
+
+    #######################################################################
+    #######################################################################
+    #the following long commented out section is needed the first time around with a new key
+    #but breaks if included when you have one.
+    #
+    #TODO: fix this mess.  who knows, maybe write a test case or two...
+    #######################################################################
+    #######################################################################
+
+    #if @cfg_data.include?(:token)
+    #    begin
+    #        @auth = flickr.auth.checkToken :auth_token => @cfg_data[:token]
+    #        return
+    #    rescue
+    #        p "oops, need new key, hit return to continue"
+    #        STDIN.gets 
+    #    end
+    #end
+    #request_token = flickr.get_request_token
+    #
+
+    #auth_url = flickr.get_authorize_url(request_token['oauth_token'], :perms => 'delete')
+    #ignore=%x[#{@cfg_data[:browser]} \"#{auth_url}\"]
+    #output "# launched #{@cfg_data[:browser]} to view \"#{auth_url} for #{request_token}\""
+    #output "# input the 9 digit code with dashes and hit return after you have logged into the url and approved the app"
+    #@verify = STDIN.gets.strip
+    #begin
+    #    login = flickr.test.login
+    #    p ["login",login].inspect
+    #rescue
+    #    p "test login failed"
+    #end
+    #begin
+    #    @access_token = flickr.get_access_token(request_token['oauth_token'], request_token['oauth_token_secret'], @verify)
+    #    @cfg_data.merge! @access_token
+    #    File.open(File.expand_path(CFG_FILE), 'w') { |f| YAML.dump(@cfg_data, f) }
+    #rescue
+    #    p "get access token failed"
+    #end
+    #@auth = flickr.auth.getToken :frob => frob
+end
+def find_file(n,format_keys)
+    format_keys.each do |fmtkey|
+        f=sprintf @cfg_data[fmtkey], n
+        photo_path=File.expand_path(@cfg_data[:img_dir] + f )
+        if ( File.exists?( photo_path ) )
+            return [f,photo_path]
+        end
     end
+    [nil, nil]
 end
 def upl( n )
     start=Time.now
-    f=sprintf @cfg_data[:format], n
-    photo_path=File.expand_path(@cfg_data[:img_dir] + f )
-    if ( ! File.exists?( photo_path ) )
-        return output "#skipping #{f} which does not exist." 
+    f, photo_path = find_file(n,[:format,:alt_format])
+    if(f.nil?)
+        output "#skipping #{f} which does not exist." 
+        return nil
     end
     id=flickr.upload_photo photo_path, :title => f, :hidden => 1, :is_public => 0, :is_family => 0, :is_friend => 0
     output "#{f}: { id: #{id}, elapsed: \"#{Time.now-start}\", size: #{File.size(photo_path)}}"
